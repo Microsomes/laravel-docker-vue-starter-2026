@@ -518,7 +518,7 @@
           - certbot
           - python3-certbot-nginx
         state: present
-      when: ssl_enabled
+      when: ssl_enabled and app_domain
       tags: [stage2]
 
     - name: Obtain SSL certificate
@@ -526,7 +526,7 @@
         certbot --nginx -d {{ app_domain }} --non-interactive --agree-tos -m {{ ssl_email }}
       args:
         creates: "/etc/letsencrypt/live/{{ app_domain }}/fullchain.pem"
-      when: ssl_enabled
+      when: ssl_enabled and app_domain
       tags: [stage2]
 
     - name: Certbot auto-renewal cron
@@ -536,7 +536,7 @@
         hour: "3"
         minute: "30"
         job: "certbot renew --quiet"
-      when: ssl_enabled
+      when: ssl_enabled and app_domain
       tags: [stage2]
 
     # --- Reload services --------------------------------------------------

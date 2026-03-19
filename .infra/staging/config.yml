@@ -6,7 +6,7 @@ droplet_name: laravel-staging
 
 # Application
 app_name: laravel
-app_domain: staging.example.com
+app_domain: ""                      # leave empty to use droplet IP, set a domain later
 app_repo: git@github.com:Microsomes/laravel-docker-vue-starter-2026.git
 app_branch: master
 app_path: /var/www/laravel

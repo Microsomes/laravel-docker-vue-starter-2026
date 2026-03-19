@@ -1,6 +1,6 @@
 server {
     listen 80;
-    server_name {{ app_domain }} _;
+    server_name {{ app_domain if app_domain else '_' }};
     root {{ app_path }}/public;
     index index.php index.html;
 
