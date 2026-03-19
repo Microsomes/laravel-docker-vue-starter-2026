@@ -5,7 +5,7 @@ A batteries-included Laravel 13 starter template with Docker, Vue 3, Inertia.js,
 ## What's Included
 
 - **Laravel 13** with Inertia.js + Vue 3 + TypeScript
-- **PHP 8.4 FPM** (Alpine)
+- **PHP 8.5 FPM** (Alpine)
 - **Nginx** reverse proxy
 - **MariaDB 11** database
 - **Redis** for cache, queues, and broadcasting

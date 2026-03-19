@@ -1,4 +1,4 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.5-fpm-alpine
 
 # Install system dependencies
 RUN apk add --no-cache \
@@ -16,17 +16,14 @@ RUN apk add --no-cache \
     linux-headers \
     $PHPIZE_DEPS
 
-# Install PHP extensions
+# Install PHP extensions (mbstring, xml, opcache are built-in on PHP 8.5)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_mysql \
-        mbstring \
-        xml \
         bcmath \
         zip \
         gd \
         intl \
-        opcache \
         pcntl \
         exif
 
