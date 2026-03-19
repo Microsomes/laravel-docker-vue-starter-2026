@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { dashboard, login, register } from '@/routes';
+import ToastNotification from '@/components/ToastNotification.vue';
 
 withDefaults(
     defineProps<{
@@ -13,6 +14,7 @@ withDefaults(
 </script>
 
 <template>
+    <ToastNotification />
     <Head title="Welcome">
         <link rel="preconnect" href="https://rsms.me/" />
         <link rel="stylesheet" href="https://rsms.me/inter/inter.css" />

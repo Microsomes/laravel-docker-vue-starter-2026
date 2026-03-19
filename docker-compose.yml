@@ -79,6 +79,62 @@ services:
     networks:
       - laravel
 
+  reverb:
+    build:
+      context: .docker/dev/php
+      dockerfile: Dockerfile
+    container_name: laravel-reverb
+    restart: unless-stopped
+    working_dir: /var/www/html
+    ports:
+      - "8080:8080"
+    volumes:
+      - .:/var/www/html
+    networks:
+      - laravel
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: php artisan reverb:start --host=0.0.0.0 --port=8080
+
+  horizon:
+    build:
+      context: .docker/dev/php
+      dockerfile: Dockerfile
+    container_name: laravel-horizon
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - laravel
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: php artisan horizon
+
+  scheduler:
+    build:
+      context: .docker/dev/php
+      dockerfile: Dockerfile
+    container_name: laravel-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    networks:
+      - laravel
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    command: php artisan schedule:work
+
   mailpit:
     image: axllent/mailpit
     container_name: laravel-mailpit
