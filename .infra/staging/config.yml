@@ -41,8 +41,8 @@ reverb_app_secret: staging-secret
 reverb_port: 8080
 
 # SSL (Let's Encrypt) — set to false to serve via IP/HTTP only
-ssl_enabled: false
-ssl_email: admin@example.com
+ssl_enabled: true
+ssl_email: tayyan54@gmail.com
 
 # Node.js
 node_major_version: 22

@@ -547,6 +547,13 @@
         job: "cd {{ app_path }} && php artisan schedule:run >> /dev/null 2>&1"
       tags: [stage2]
 
+    # --- Reload Nginx before SSL (so Certbot sees the server_name) --------
+    - name: Reload Nginx
+      systemd:
+        name: nginx
+        state: reloaded
+      tags: [stage2]
+
     # --- SSL via Certbot --------------------------------------------------
     - name: Install Certbot
       apt:
