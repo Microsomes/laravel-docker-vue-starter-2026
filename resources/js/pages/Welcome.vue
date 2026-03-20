@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head, Link } from '@inertiajs/vue3';
 import { dashboard, login, register } from '@/routes';
-import { onMounted, onUnmounted, reactive, ref } from 'vue';
+import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import ToastNotification from '@/components/ToastNotification.vue';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
@@ -56,6 +56,8 @@ interface Particle {
 }
 
 const showBanner = ref(true);
+const showChat = ref(false);
+const chatMessage = ref('');
 const visitorCount = ref(0);
 const cursors = reactive<Record<string, CursorData>>({});
 const particles = ref<Particle[]>([]);
@@ -155,6 +157,53 @@ const handleMouseMove = throttle((e: MouseEvent) => {
     });
 }, 80);
 
+// --- Hidden chat (press T) ---
+interface ChatBubble {
+    id: number;
+    message: string;
+    color: string;
+    x: number;
+    y: number;
+}
+
+const chatBubbles = ref<ChatBubble[]>([]);
+let nextBubbleId = 0;
+const chatInput = ref<HTMLInputElement | null>(null);
+
+function handleKeydown(e: KeyboardEvent) {
+    if (showChat.value) return;
+    if (e.key === 't' || e.key === 'T') {
+        if (document.activeElement?.tagName === 'INPUT' || document.activeElement?.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        showChat.value = true;
+        nextTick(() => chatInput.value?.focus());
+    }
+}
+
+function sendChat() {
+    const msg = chatMessage.value.trim();
+    if (!msg || !channel) return;
+
+    const color = myColor.value || '#8b5cf6';
+    channel.whisper('chat', { message: msg, color });
+    showChatBubble(msg, color);
+
+    chatMessage.value = '';
+    showChat.value = false;
+}
+
+function showChatBubble(message: string, color: string) {
+    const id = nextBubbleId++;
+    const x = 10 + Math.random() * 60;
+    const y = 15 + Math.random() * 50;
+
+    chatBubbles.value.push({ id, message, color, x, y });
+
+    setTimeout(() => {
+        chatBubbles.value = chatBubbles.value.filter((b) => b.id !== id);
+    }, 4000);
+}
+
 onMounted(() => {
     welcomeEcho = new Echo({
         broadcaster: 'reverb',
@@ -229,10 +278,14 @@ onMounted(() => {
                 e.y * window.innerHeight,
                 e.color,
             );
+        })
+        .listenForWhisper('chat', (e: any) => {
+            showChatBubble(e.message, e.color);
         });
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('click', handleClick);
+    document.addEventListener('keydown', handleKeydown);
 
     cleanupInterval = setInterval(() => {
         const now = Date.now();
@@ -247,6 +300,7 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('mousemove', handleMouseMove);
     document.removeEventListener('click', handleClick);
+    document.removeEventListener('keydown', handleKeydown);
     if (channel) {
         welcomeEcho?.leave('welcome');
     }
@@ -383,7 +437,50 @@ const techStack = [
                 animationDuration: `${p.duration}ms`,
             }"
         />
+
+        <!-- Chat bubbles (floating) -->
+        <TransitionGroup name="bubble">
+            <div
+                v-for="bubble in chatBubbles"
+                :key="bubble.id"
+                class="absolute rounded-2xl px-4 py-2 text-sm font-medium text-white shadow-xl"
+                :style="{
+                    left: `${bubble.x}%`,
+                    top: `${bubble.y}%`,
+                    backgroundColor: bubble.color,
+                    maxWidth: '280px',
+                }"
+            >
+                {{ bubble.message }}
+            </div>
+        </TransitionGroup>
     </div>
+
+    <!-- Chat input dialog (press T) -->
+    <Transition name="fade">
+        <div v-if="showChat" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm" @click.self="showChat = false">
+            <div class="w-full max-w-md rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-2xl">
+                <p class="mb-3 text-sm text-zinc-400">Send a message to everyone on this page</p>
+                <form @submit.prevent="sendChat" class="flex gap-3">
+                    <input
+                        ref="chatInput"
+                        v-model="chatMessage"
+                        type="text"
+                        maxlength="100"
+                        placeholder="Type a message..."
+                        class="flex-1 rounded-lg border border-zinc-700 bg-zinc-800 px-4 py-2.5 text-sm text-zinc-100 placeholder-zinc-500 outline-none focus:border-violet-500"
+                        @keydown.escape="showChat = false"
+                    />
+                    <button
+                        type="submit"
+                        class="rounded-lg bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500"
+                    >
+                        Send
+                    </button>
+                </form>
+            </div>
+        </div>
+    </Transition>
 
     <div class="min-h-screen bg-zinc-950 text-zinc-100">
         <!-- Subtle gradient background -->
@@ -755,5 +852,29 @@ const techStack = [
         transform: translate(var(--dx), var(--dy)) scale(0);
         opacity: 0;
     }
+}
+
+.bubble-enter-active {
+    transition: all 0.3s ease-out;
+}
+.bubble-leave-active {
+    transition: all 0.8s ease-in;
+}
+.bubble-enter-from {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+}
+.bubble-leave-to {
+    opacity: 0;
+    transform: scale(0.8) translateY(-30px);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.15s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
 }
 </style>
