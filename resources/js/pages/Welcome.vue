@@ -90,8 +90,7 @@ function getCsrfToken(): string {
     return match ? decodeURIComponent(match[1]) : '';
 }
 
-function spawnParticles(x: number, y: number, color: string) {
-    const count = 14;
+function spawnParticles(x: number, y: number, color: string, count = 14, spread = 80, maxSize = 6) {
     const newParticles: Particle[] = [];
 
     for (let i = 0; i < count; i++) {
@@ -101,9 +100,9 @@ function spawnParticles(x: number, y: number, color: string) {
             y,
             color,
             angle: (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6,
-            distance: 50 + Math.random() * 80,
-            size: 3 + Math.random() * 6,
-            duration: 600 + Math.random() * 600,
+            distance: spread * 0.6 + Math.random() * spread,
+            size: 2 + Math.random() * maxSize,
+            duration: 400 + Math.random() * 500,
         });
     }
 
@@ -112,7 +111,11 @@ function spawnParticles(x: number, y: number, color: string) {
     setTimeout(() => {
         const ids = new Set(newParticles.map((p) => p.id));
         particles.value = particles.value.filter((p) => !ids.has(p.id));
-    }, 1300);
+    }, 1000);
+}
+
+function spawnTrail(x: number, y: number, color: string) {
+    spawnParticles(x, y, color, 3, 25, 3);
 }
 
 function handleClick(e: MouseEvent) {
@@ -131,6 +134,8 @@ function handleClick(e: MouseEvent) {
 }
 
 const handleMouseMove = throttle((e: MouseEvent) => {
+    spawnTrail(e.clientX, e.clientY, myColor.value || '#8b5cf6');
+
     if (!channel) return;
     channel.whisper('mouse-move', {
         id: myId.value,
@@ -139,7 +144,7 @@ const handleMouseMove = throttle((e: MouseEvent) => {
         color: myColor.value,
         name: 'Visitor',
     });
-}, 50);
+}, 80);
 
 onMounted(() => {
     welcomeEcho = new Echo({
