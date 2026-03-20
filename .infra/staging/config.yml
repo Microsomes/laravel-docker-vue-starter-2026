@@ -1,6 +1,6 @@
 # Server (DigitalOcean)
 region: lon1
-size: s-2vcpu-4gb
+size: s-1vcpu-1gb
 image: ubuntu-24-04-x64
 droplet_name: laravel-staging
 
