@@ -1,0 +1,94 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches:
+      - master
+
+concurrency:
+  group: staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+          npm ci
+
+      - name: Copy env and generate key
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Run tests
+        run: ./vendor/bin/phpunit
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    environment: staging
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.STAGING_SERVER_IP }}
+          username: ${{ secrets.STAGING_DEPLOY_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script_stop: true
+          command_timeout: 10m
+          script: |
+            set -e
+            cd /var/www/laravel
+
+            echo ">>> Maintenance mode"
+            php artisan down --retry=30
+
+            echo ">>> Pulling latest code"
+            git pull origin master
+
+            echo ">>> Installing PHP dependencies"
+            composer install --no-dev --optimize-autoloader --no-interaction
+
+            echo ">>> Installing Node dependencies"
+            npm ci
+
+            echo ">>> Building frontend"
+            npm run build
+
+            echo ">>> Running migrations"
+            php artisan migrate --force
+
+            echo ">>> Caching"
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
+            php artisan event:cache
+
+            echo ">>> Restarting services"
+            sudo systemctl restart php8.5-fpm
+            sudo systemctl restart laravel-horizon
+            sudo systemctl restart laravel-reverb
+
+            echo ">>> Going live"
+            php artisan up
+
+            echo ">>> Deploy complete!"
